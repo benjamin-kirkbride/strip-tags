@@ -37,6 +37,10 @@ To return just the first element on the page that matches one of the selectors, 
 ```bash
 cat input.html | strip-tags .content --first > output.txt
 ```
+To remove content contained by specific selectors - e.g. the `<nav>` section of a page, use `-r` or `--remove`:
+```bash
+cat input.html | strip-tags -r nav > output.txt
+```
 To minify whitespace - reducing multiple space and tab characters to a single space, and multiple newlines and spaces to a maximum of two newlines - add `-m` or `--minify`:
 ```bash
 cat input.html | strip-tags -m > output.txt
@@ -77,26 +81,53 @@ You can also specify a bundle of tags. For example, `strip-tags -t hs` will keep
 
 The following bundles can be used:
 
+<!-- [[[cog
+import cog
+from strip_tags.lib import BUNDLES
+lines = []
+for name, tags in BUNDLES.items():
+    lines.append("- `-t {}`: {}".format(name, ", ".join("`<{}>`".format(tag) for tag in tags)))
+cog.out("\n".join(lines))
+]]] -->
 - `-t hs`: `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>`
 - `-t metadata`: `<title>`, `<meta>`
-- `-t structure`: `<header>`, `<section>`, `<main>`, `<aside>`, `<footer>`, `<article>`, `<nav>`
-
+- `-t structure`: `<header>`, `<nav>`, `<main>`, `<article>`, `<section>`, `<aside>`, `<footer>`
+- `-t tables`: `<table>`, `<tr>`, `<td>`, `<th>`, `<thead>`, `<tbody>`, `<tfoot>`, `<caption>`, `<colgroup>`, `<col>`
+- `-t lists`: `<ul>`, `<ol>`, `<li>`, `<dl>`, `<dd>`, `<dt>`
+<!-- [[[end]]] -->
 
 ## As a Python library
 
 You can use `strip-tags` from Python code too. The function signature looks like this:
 
+<!-- [[[cog
+import ast
+module = ast.parse(open("strip_tags/lib.py").read())
+strip_tags = [
+    fn for fn in module.body
+    if getattr(fn, 'name', None) == 'strip_tags'
+][0]
+code = ast.unparse(strip_tags)
+defline = code.split("\n")[0]
+code = (
+    ',\n    '.join(defline.split(', ')).replace(") ->", "\n) ->").replace("strip_tags(", "strip_tags(\n    ")
+)
+cog.out("```python\n{}\n```".format(code))
+]]] -->
 ```python
 def strip_tags(
     input: str,
-    selectors: Optional[Iterable[str]] = None,
+    selectors: Optional[Iterable[str]]=None,
     *,
-    minify: bool = False,
-    first: bool = False,
-    keep_tags: Optional[Iterable[str]] = None,
-    all_attrs: bool = False,
+    removes: Optional[Iterable[str]]=None,
+    minify: bool=False,
+    first: bool=False,
+    keep_tags: Optional[Iterable[str]]=None,
+    all_attrs: bool=False
 ) -> str:
 ```
+<!-- [[[end]]] -->
+
 Here's an example:
 ```python
 from strip_tags import strip_tags
@@ -118,6 +149,45 @@ Output:
 
 And whitespace too
 ```
+
+## strip-tags --help
+
+<!-- [[[cog
+import cog
+from strip_tags import cli
+from click.testing import CliRunner
+runner = CliRunner()
+result = runner.invoke(cli.cli, ["--help"])
+help = result.output.replace("Usage: cli", "Usage: strip-tags")
+cog.out(
+    "```\n{}\n```".format(help)
+)
+]]] -->
+```
+Usage: strip-tags [OPTIONS] [SELECTORS]...
+
+  Strip tags from HTML, optionally from areas identified by CSS selectors
+
+  Example usage:
+
+      cat input.html | strip-tags > output.txt
+
+  To run against just specific areas identified by CSS selectors:
+
+      cat input.html | strip-tags .entry .footer > output.txt
+
+Options:
+  --version             Show the version and exit.
+  -r, --remove TEXT     Remove content in these selectors
+  -i, --input FILENAME  Input file
+  -m, --minify          Minify whitespace
+  -t, --keep-tag TEXT   Keep these <tags>
+  --all-attrs           Include all attributes on kept tags
+  --first               First element matching the selectors
+  --help                Show this message and exit.
+
+```
+<!-- [[[end]]] -->
 
 ## Development
 

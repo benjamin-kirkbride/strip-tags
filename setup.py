@@ -1,7 +1,7 @@
 from setuptools import setup
 import os
 
-VERSION = "0.4.1"
+VERSION = "0.5"
 
 
 def get_long_description():
@@ -32,6 +32,6 @@ setup(
         strip-tags=strip_tags.cli:cli
     """,
     install_requires=["click", "beautifulsoup4", "html5lib"],
-    extras_require={"test": ["pytest", "pytest-icdiff", "PyYAML"]},
+    extras_require={"test": ["pytest", "PyYAML", "cogapp"]},
     python_requires=">=3.7",
 )
